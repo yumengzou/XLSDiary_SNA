@@ -7,43 +7,87 @@ import pandas as pd
 import numpy as np
 import os
 from sklearn.cluster import KMeans
-from sklearn.decomposition import PCA
+import sklearn.decomposition as skl
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+from matplotlib.widgets import Button, CheckButtons
 
 os.chdir("/Users/yumeng.zou/Google Drive/Freshyear/Summer/Research/Diary/")
 
-# make place-type table from Diary
 diary=pd.read_csv("csv/Diary.csv")
-evt_plc=diary[['Event','Place']].dropna()
-evt_type=diary[['Event','Type']].dropna()
-plc_type=pd.merge(evt_plc,evt_type,how='left').drop("Event",axis=1)
 
-# count the frequency of types for each place
-plc_type['Freq']=1
-plc_type=plc_type.groupby(['Place','Type']).sum().reset_index()#.sort_values(by='Freq',ascending=False)
-### remove 'Go' from the clustering process because 'Go' is very frequent but does not carry cultural meanings
-plc_type=plc_type.query("Type!='Go'&Type!='Visit'") 
-
-# make sample(place)-feature(type) table from place, type, and freq
-pivot=plc_type.pivot(index='Place',columns='Type',values='Freq')
-mat=pivot.replace(np.nan,0).as_matrix()
-
-# cluster places with K-means
-cluster=KMeans(n_clusters=6).fit(mat)
-
-# visualize clusters with PCA(principle component analysis)
-pca=PCA(n_components=3).fit(mat)
-# print(pca.explained_variance_ratio_)
-x,y,z=zip(*pca.transform(mat))
+class ClusterByType():
+     
+    n=10
+    colName=""
+    CusType=pd.DataFrame()
+    pivot=pd.DataFrame()
+    switch=pd.Series([False,False,True,True,True,True,True])
+        
+    def init(self,colName):
+        ClusterByType.colName=colName
+        EventCus=diary[['Event',colName]].dropna()
+        EventType=diary[['Event','Type']].dropna()
+        CusType=pd.merge(EventCus,EventType,how='left').drop("Event",axis=1)
+            
+        CusType['Freq']=1
+        ClusterByType.CusType=CusType.groupby([colName,'Type']).sum().reset_index()
+        filtered=ClusterByType.CusType.query("Type!='Go'&Type!='Visit'")
+        ClusterByType.pivot=filtered.pivot(index=colName,columns='Type',values='Freq')
+            
+    def draw(self):
+        mat=ClusterByType.pivot.replace(np.nan,0).as_matrix()
+        clusters=KMeans(n_clusters=ClusterByType.n).fit(mat)
+        pca=skl.PCA(n_components=3).fit(mat)
+        x,y,z=zip(*pca.transform(mat))
+           
+        fig=plt.figure(figsize=(9,6))
+        ax = fig.add_subplot(111, projection='3d')
+        ax.scatter(y,x,z,c=clusters.labels_,s=50,alpha=0.5)
+        ax.set_title('Clustering Places based on the Type of events they appear in')
+        
+        # axes labels
+        xl,yl,zl=pca.explained_variance_ratio_
+        ax.set_xlabel('{:.2f}%'.format(xl*100))
+        ax.set_ylabel('{:.2f}%'.format(yl*100))
+        ax.set_zlabel('{:.2f}%'.format(zl*100))
+        
+        # Button: regenerate graph
+        axdraw = plt.axes([0.81, 0.05, 0.1, 0.075])
+        bdraw=Button(axdraw,'Draw')
+        bdraw.on_clicked(ClusterByType.draw)
+        
+        # Check Button: filter features
+        rax = plt.axes([0.05, 0.5, 0.1, 0.3])
+        ClusterByType.switch.index=ClusterByType.CusType['Type'].value_counts()[:7].index
+        check = CheckButtons(rax, ClusterByType.switch.index, ClusterByType.switch)
+        def checkFilter(label):
+            ClusterByType.switch[label]=not ClusterByType.switch[label]
+            thrownFeatures=['Type!='+repr(type) for type in ClusterByType.switch[ClusterByType.switch==False].index]
+            if thrownFeatures:
+                s='&'.join(thrownFeatures)
+                filtered=ClusterByType.CusType.query(s)
+            else:
+                filtered=ClusterByType.CusType
+            ClusterByType.pivot=filtered.pivot(index=ClusterByType.colName,columns='Type',values='Freq')
+            ClusterByType.draw(self)
+        check.on_clicked(checkFilter)
+        
+        # mouse event: full information of each point
+        
+        
+        plt.show()
+        
+        
  
-fig=plt.figure(figsize=(15,10))
-ax = fig.add_subplot(111, projection='3d')
-ax.scatter(y,z,x,c=cluster.labels_,s=100,alpha=0.5)
+g = ClusterByType()
+g.init('Place')
+g.draw()
+
  
-plt.savefig("Graph/placeType.png")
-plt.close()
+# plt.savefig("Graph/placeType.png")
+# plt.close()
  
-result=pd.DataFrame({'cluster':cluster.labels_,'label':pivot.index}).sort_values(by='cluster',ascending=False)
-result.to_csv("csv/placeCluster.csv",index=False,encoding='utf-8')
+# result=pd.DataFrame({'cluster':cluster.labels_,'label':pivot.index}).sort_values(by='cluster',ascending=False)
+# result.to_csv("csv/placeCluster.csv",index=False,encoding='utf-8')
 
