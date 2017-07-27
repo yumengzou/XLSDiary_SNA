@@ -8,16 +8,17 @@ import networkx as nx
 
 
 """
---- preprocess: delete empty rows/columns, standardize names, and make event id ---
-@diary = hand-typed spreadsheet
-export the preprocessed diary into a csv
-return preprocessed diary
+--- preprocess: delete empty rows/columns, standardize people's names, types, place names, and make event id ---
+@diary = hand-typed diary(ies) as DataFrame
+write the preprocessed diary to csv/Diary.csv
+return the preprocessed diary
 """
 def preprocess(diary):
     # clean the data
     diary.dropna(axis=[0,1],how='all',inplace=True)
     diary['Participants']=StdNm(diary['Participants'])
     diary=StdType(diary)
+    diary=StdPlc(diary)
     
     # make event index from Type
     event_iter=0
@@ -30,15 +31,15 @@ def preprocess(diary):
     diary["Event"]=event_idx
     
     # export into a csv
-    diary.to_csv("Diary.csv",index=False,encoding='utf-8')
+    diary.to_csv("csv/Diary.csv",index=False,encoding='utf-8')
     
     return diary
 
 
 """
 --- unimodal network of who-knows-who ---
-@diary = preprocessed DataFrame
-export a graphml file of nodes and edges, a csv of all people appeared in the diary
+@diary = preprocessed diary as DataFrame
+write a graphml file to Graph/ppl.graphml
 return
 """
 def ppl(diary):
@@ -62,21 +63,14 @@ def ppl(diary):
     G = nx.from_pandas_dataframe(edgelist, source="Source", target="Target", edge_attr="Weight")
     nx.write_graphml(G, "Graph/ppl.graphml", encoding="utf-8")
     
-    # make a series of unique names as the index and columns of the adjacency matrix
-    ppl_ls=list(diary['Participants'].unique())
-    ppl_ls.append("謝蘭生")
-    pplNodes=pd.Series(ppl_ls)
-
-    pplNodes.to_csv('AllPeople.csv',index=False,encoding='utf-8')
-    
     return
 
 
 
 """
 --- people-place bimodal network ---
-@diary = preprocessed DataFrame
-export a graphml file of nodes and edges
+@diary = preprocessed diary as DataFrame
+write a graphml file to Graph/ppl_plc.graphml
 return
 """
 def ppl_plc(diary):
@@ -95,8 +89,7 @@ def ppl_plc(diary):
     
     G = nx.from_pandas_dataframe(edges, source="Source", target="Target", edge_attr="Weight")
     nx.write_graphml(G, "Graph/ppl_plc.graphml", encoding="utf-8")
-#     edges.to_csv("NdEg/ppl_plc_Edges.csv",index=False,encoding='utf=8')
-    
+        
     return
 
 
@@ -110,7 +103,7 @@ def StdNm (nonstd=None):
     
     ## make a DataFrame indexed by standardized name and
     ## contains columns "FirstName", "OtherNames", "OtherNames1"
-    std=pd.read_csv("StandardNames.csv")
+    std=pd.read_csv("csv/StandardNames.csv")
     std["FullName"]=std["LastName"]+std["FirstName"]
     std["FullName"].fillna(method="ffill",inplace=True)
     std.set_index("FullName",inplace=True)
@@ -150,10 +143,9 @@ def StdNm (nonstd=None):
 
 
 """
---- Standardize Type and Direction columns in a given diary ---
+--- Standardize Type and Direction columns ---
 @diary = pandas DataFrame
-export standardized diary as a csv file
-return standardized diary
+return the standardized diary
 """
 def StdType(diary):
     
@@ -196,6 +188,8 @@ def StdType(diary):
         
         return ser
 
+    stdtp=pd.read_csv("csv/StandardTypes.csv").set_index("Alternative")['Standard']
+
     def pattern2(Type):
         
         try:
@@ -204,35 +198,8 @@ def StdType(diary):
             AttributeError
             return Type
         
-        if Type=='Painting' or Type=='Writing' or Type=='寫字' or Type=='art':
-            Type='Art'
-        
-        if Type=='Go_places':
-            Type='Go'
-        
-        if Type=='Theater' or Type=='彈琴':
-            Type='Recreation'
-        
-        if Type=='Meal' or Type=='飲' or Type=='meal' or Type=='Drinking' or Type=='食荔子':
-            Type='Banquet'
-        
-        if Type=='談禪':
-            Type='Chat'
-        
-        if Type=='候':
-            Type='Visit'
-        
-        if Type=='Ceremony':
-            Type='Occasion'
-        
-        if Type=='Ldoge':
-            Type='Lodge'
-        
-        if Type=='Gazetteer':
-            Type='Administrative'
-        
-        if Type=='静坐' or Type=='習静' or Type=='坐禪' or Type=='齋':
-            Type='Religious'
+        if Type in stdtp.index:
+            Type=stdtp[Type]
             
         return Type
     
@@ -260,10 +227,30 @@ def StdType(diary):
 
 
 """
+--- Standardize place names ---
+@diary = pandas DataFrame
+return the standardized diary
+"""
+def StdPlc(diary):
+    
+    stdplc=pd.read_csv("csv/StandardPlaces.csv").set_index("Alternative")['Standard']
+
+    def standardize_places(s):
+        if s in stdplc.index:
+            s=stdplc[s]
+        return s
+    
+    diary['Place']=diary['Place'].map(standardize_places)
+    
+    return diary
+
+
+
+"""
 --- Extract weather information from a txt file ---
 @txt_path   = path of the diary text file
 @diary_path = path of the diary csv
-export a csv file of English date, Chinese date, and extracted weather
+write a csv file of English date, Chinese date, and extracted weather to DateVWeather.csv
 return
 """
 def extract_weather(txt_path,diary_path):
@@ -294,7 +281,8 @@ def extract_weather(txt_path,diary_path):
 --- Put weather information into the diary spreadsheet ---
 @weather_path = path to the weather csv
 @diary_path   = path to the diary csv
-export a csv file of diary with weather
+write a csv file of diary with weather
+return
 """
 def make_weather(weather_path,diary_path):
 
