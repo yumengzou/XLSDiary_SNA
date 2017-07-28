@@ -13,6 +13,7 @@ import sklearn.decomposition as skl
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.widgets import Button, CheckButtons
+from unittest.mock import inplace
 
 os.chdir("/Users/yumeng.zou/Google Drive/Freshyear/Summer/Research/Diary/")
 plt.rcParams['backend']='GTK'
@@ -22,28 +23,41 @@ diary=pd.read_csv("csv/Diary.csv")
 
 class ClusterByType():
      
-    n=10
-    colName=""
-    CusType=pd.DataFrame()
-    pivot=pd.DataFrame()
     labels=[]
-    fig=plt.figure(figsize=(9,6))
-    switch=pd.Series([False,False,True,True,True,True,True])
 
     def init(self,colName):
+        
         ClusterByType.colName=colName
+        
         EventCus=diary[['Event',colName]].dropna()
         EventType=diary[['Event','Type']].dropna()
-        CusType=pd.merge(EventCus,EventType,how='left').drop("Event",axis=1)
-            
+        CusType=pd.merge(EventCus,EventType,how='left').drop("Event",axis=1)  
         CusType['Freq']=1
         ClusterByType.CusType=CusType.groupby([colName,'Type']).sum().reset_index()
+        
+        ClusterByType.switch=pd.DataFrame({'types':ClusterByType.CusType['Type'].value_counts()[:8].index,
+                                           'boo':[False,False,True,True,True,True,True,True]})
+        
         filtered=ClusterByType.CusType.query("Type!='Go'&Type!='Visit'")
         ClusterByType.pivot=filtered.pivot(index=colName,columns='Type',values='Freq')
+        
+        ClusterByType.fig=plt.figure(figsize=(9,6))
+          
+    def filter(self):
+        switch=ClusterByType.switch.set_index('boo')['types']
+        thrownFeatures=['Type!='+repr(Type) for Type in switch[False]]
+        
+        if thrownFeatures:
+            s='&'.join(thrownFeatures)
+            filtered=ClusterByType.CusType.query(s)
+        else:
+            filtered=ClusterByType.CusType
+        
+        ClusterByType.pivot=filtered.pivot(index=ClusterByType.colName,columns='Type',values='Freq')
             
     def draw(self):
         mat=ClusterByType.pivot.replace(np.nan,0).as_matrix()
-        clusters=KMeans(n_clusters=ClusterByType.n).fit(mat)
+        clusters=KMeans(n_clusters=10).fit(mat)
         ClusterByType.labels=clusters.labels_
         pca=skl.PCA(n_components=3).fit(mat)
         x,y,z=zip(*pca.transform(mat))
@@ -64,27 +78,25 @@ class ClusterByType():
         bdraw.on_clicked(ClusterByType.draw)
         
         # Button: close graph and store csv
-        axdraw = plt.axes([0.85, 0.85, 0.1, 0.06])
+        axdraw = plt.axes([0.85, 0.9, 0.1, 0.06])
         bclose=Button(axdraw,'Close')
         bclose.on_clicked(ClusterByType.ClosenSave)
         
         # Check Button: filter features
-        rax = plt.axes([0.02, 0.4, 0.1, 0.35])
-        ClusterByType.switch.index=ClusterByType.CusType['Type'].value_counts()[:7].index
-        check = CheckButtons(rax, ClusterByType.switch.index, ClusterByType.switch)
+        rax = plt.axes([0.02, 0.3, 0.12, 0.35])
+        check = CheckButtons(rax, ClusterByType.switch['types'], ClusterByType.switch['boo'])
+        
         def checkFilter(label):
-            ClusterByType.switch[label]=not ClusterByType.switch[label]
-            thrownFeatures=['Type!='+repr(type) for type in ClusterByType.switch[ClusterByType.switch==False].index]
-            if thrownFeatures:
-                s='&'.join(thrownFeatures)
-                filtered=ClusterByType.CusType.query(s)
-            else:
-                filtered=ClusterByType.CusType
-            ClusterByType.pivot=filtered.pivot(index=ClusterByType.colName,columns='Type',values='Freq')
+            switch=ClusterByType.switch.set_index('types')['boo']
+            switch[label]=not switch.ix[label]
+            ClusterByType.switch['boo']=switch.values
+            
+            ClusterByType.filter(self)
             ClusterByType.draw(self)
+            
         check.on_clicked(checkFilter)
         
-        # mouse event: full information of each point
+        # mouse event: print full information of each point
         def onPick(event):
             
             if event.artist != points:
@@ -96,11 +108,9 @@ class ClusterByType():
             
             i=0
             for dataidx in event.ind:
-                if i==2:
+                if i==3:
                     break
-                x,y,z=event.artist._offsets3d
-                t=str(ClusterByType.pivot.reset_index().loc[dataidx].dropna())
-                ax.text(x[dataidx],y[dataidx],z[dataidx],str(t),fontsize=8)
+                print(ClusterByType.pivot.reset_index().loc[dataidx].dropna())
                 i+=1
             plt.show()
             return True
