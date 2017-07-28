@@ -32,16 +32,21 @@ class byType():
         CusType['Freq']=1
         byType.CusType=CusType.groupby([colName,'Type']).sum().reset_index()
         
-        byType.switch=pd.DataFrame({'types':byType.CusType['Type'].value_counts()[:6].index,
-                                    'boo':[False,False,True,True,True,True]})
+        byType.switch=pd.DataFrame({'types':byType.CusType['Type'].value_counts()[:8].index,
+                                    'boo':[False,False,True,True,True,True,True,True]})
         
         filtered=byType.CusType.query("Type!='Go'&Type!='Visit'")
         byType.pivot=filtered.pivot(index=colName,columns='Type',values='Freq')
         
         byType.figscatter=plt.figure(figsize=(9,6))
         byType.axs = byType.figscatter.add_subplot(111, projection='3d')
+        byType.axdraw = byType.figscatter.add_axes([0.85, 0.03, 0.1, 0.06])
+        byType.axclose = byType.figscatter.add_axes([0.85, 0.9, 0.1, 0.06])
+        byType.axcheck = byType.figscatter.add_axes([0.02, 0.3, 0.12, 0.35])
+        
         byType.figbar=plt.figure(figsize=(9,6))
         byType.axb=byType.figbar.add_subplot(111)
+        byType.axperc = byType.figbar.add_axes([0.85, 0.03, 0.1, 0.06])
           
     def filter(self):
         switch=byType.switch.set_index('boo')['types']
@@ -54,10 +59,10 @@ class byType():
             filtered=byType.CusType
         
         byType.pivot=filtered.pivot(index=byType.colName,columns='Type',values='Freq')
-            
+    
+    # 3D scatter plot      
     def drawScatter(self):
         
-        # 3D scatter plot
         mat=byType.pivot.replace(np.nan,0).as_matrix()
         cluster=KMeans(n_clusters=10).fit(mat)
         byType.labels=cluster.labels_
@@ -80,18 +85,18 @@ class byType():
         byType.axs.set_zlabel('{:.2f}%'.format(zl*100))
         
         # Button: regenerate graph
-        axdraw = byType.figscatter.add_axes([0.85, 0.03, 0.1, 0.06])
-        bdraw=Button(axdraw,'Draw')
+        byType.axdraw.cla()
+        bdraw=Button(byType.axdraw,'Draw')
         bdraw.on_clicked(byType.drawScatter)
         
         # Button: close graph and store csv
-        axclose = byType.figscatter.add_axes([0.85, 0.9, 0.1, 0.06])
-        bclose=Button(axclose,'Close')
+        byType.axclose.cla()
+        bclose=Button(byType.axclose,'Close')
         bclose.on_clicked(byType.ClosenSave)
         
         # Check Button: filter features
-        axcheck = byType.figscatter.add_axes([0.02, 0.3, 0.12, 0.35])
-        check = CheckButtons(axcheck, byType.switch['types'], byType.switch['boo'])
+        byType.axcheck.cla()
+        check = CheckButtons(byType.axcheck, byType.switch['types'], byType.switch['boo'])
         
         def checkFilter(label):
             switch=byType.switch.set_index('types')['boo']
@@ -125,16 +130,14 @@ class byType():
         byType.figscatter.canvas.mpl_connect('pick_event', onPick)
         
         byType.drawBar(self)
-        
-#         plt.show()
-        
-    
+          
+    # stacked bar plot
     def drawBar(self,ClbyTp=None):
         
         # by default, generate graph from instance variable Cluster-by-Type (DataFrame)
         if ClbyTp is None:
             ClbyTp=byType.ClbyTp
-        # stacked bar plot
+        
         ## xtab is a list of sorted clusters based on the number of places contained
         xtab=byType.clusters.groupby('Cluster').count().sort_values(by=byType.colName,ascending=False).index
         ## stacks is a list of selected features(Types of Event) used in K-means clustering
@@ -153,8 +156,8 @@ class byType():
         byType.axb.legend(bars,stacks)
         
         # Button: regenerate graph
-        axperc = byType.figbar.add_axes([0.85, 0.03, 0.1, 0.06])
-        bperc=Button(axperc,'to %')
+        byType.axperc.cla()
+        bperc=Button(byType.axperc,'to %')
         bperc.on_clicked(byType.toPercent)
         
         plt.show()
@@ -176,6 +179,5 @@ class byType():
 g = byType()
 g.init('Place')
 g.drawScatter()
-g.drawBar()
 
 
