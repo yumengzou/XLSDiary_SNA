@@ -196,6 +196,7 @@ class byType():
         plt.close('all')
         result=byType.clusters.sort_values(by='Cluster',ascending=False)
         result.to_csv("csv/"+byType.colName+"Cluster.csv",index=False,encoding='utf-8')
+        byType.CusType.to_csv('csv/'+byType.colName+'TypeFreq.csv',index=False,encoding='utf-8')
         
     def toPercent(self):
         def percent(arr):
