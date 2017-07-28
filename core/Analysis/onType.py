@@ -15,7 +15,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.widgets import Button, CheckButtons
 
 os.chdir("/Users/yumeng.zou/Google Drive/Freshyear/Summer/Research/Diary/")
-plt.rcParams['backend']='GTK'
+plt.rcParams['backend']='GTK3Agg'
 plt.rcParams['font.family']='Microsoft YaHei'
 
 diary=pd.read_csv("csv/Diary.csv")
@@ -30,10 +30,14 @@ class byType():
         EventType=diary[['Event','Type']].dropna()
         CusType=pd.merge(EventCus,EventType,how='left').drop("Event",axis=1)  
         CusType['Freq']=1
-        byType.CusType=CusType.groupby([colName,'Type']).sum().reset_index()
+        CusType=CusType.groupby([colName,'Type']).sum().reset_index()
+        gt4=CusType[colName].value_counts()>4 # boolean Series
+        freqCus=CusType[colName].value_counts()[gt4].index
+        byType.CusType=CusType.set_index(colName).ix[freqCus].reset_index()
         
-        byType.switch=pd.DataFrame({'types':byType.CusType['Type'].value_counts()[:8].index,
-                                    'boo':[False,False,True,True,True,True,True,True]})
+        gt4=byType.CusType['Type'].value_counts()>4 # boolean Series
+        freqType=byType.CusType['Type'].value_counts()[gt4].index
+        byType.switch=pd.DataFrame({'types':freqType,'boo':True})
         
         filtered=byType.CusType.query("Type!='Go'&Type!='Visit'")
         byType.pivot=filtered.pivot(index=colName,columns='Type',values='Freq')
@@ -42,9 +46,9 @@ class byType():
         byType.axs = byType.figscatter.add_subplot(111, projection='3d')
         byType.axdraw = byType.figscatter.add_axes([0.85, 0.03, 0.1, 0.06])
         byType.axclose = byType.figscatter.add_axes([0.85, 0.9, 0.1, 0.06])
-        byType.axcheck = byType.figscatter.add_axes([0.02, 0.3, 0.12, 0.35])
+        byType.axcheck = byType.figscatter.add_axes([0.02, 0.3, 0.15, 0.5])
         
-        byType.figbar=plt.figure(figsize=(9,6))
+        byType.figbar=plt.figure(figsize=(6,4))
         byType.axb=byType.figbar.add_subplot(111)
         byType.axperc = byType.figbar.add_axes([0.85, 0.03, 0.1, 0.06])
           
@@ -100,7 +104,7 @@ class byType():
         
         def checkFilter(label):
             switch=byType.switch.set_index('types')['boo']
-            switch[label]=not switch.ix[label]
+            switch[label]=not switch[label]
             byType.switch['boo']=switch.values
             
             byType.filter(self)
@@ -108,8 +112,8 @@ class byType():
             
         check.on_clicked(checkFilter)
         
-        # mouse event: print full information of each point
-        def onPick(event):
+        # mouse event: a pie chart for each point
+        def pickPlace(event):
             
             if event.artist != points:
                 return True
@@ -118,16 +122,20 @@ class byType():
             if not N:
                 return True
             
-            i=0
-            for dataidx in event.ind:
+            figpie, axpie = plt.subplots()
+            for i,dataidx in enumerate(event.ind):
                 if i==3:
                     break
-                print(byType.pivot.reset_index().loc[dataidx].dropna())
-                i+=1
+                # pie chart
+                ser=byType.pivot.reset_index().loc[dataidx].dropna()
+                Labels=ser[1:].index
+                size=[round(n*100/ser[1:].sum()) for n in ser[1:].values]
+                axpie.pie(size, labels=Labels, autopct='%1.1f%%', startangle=90)
+                axpie.set_title(ser[0])
             plt.show()
             return True
         
-        byType.figscatter.canvas.mpl_connect('pick_event', onPick)
+        byType.figscatter.canvas.mpl_connect('pick_event', pickPlace)
         
         byType.drawBar(self)
           
@@ -159,6 +167,29 @@ class byType():
         byType.axperc.cla()
         bperc=Button(byType.axperc,'to %')
         bperc.on_clicked(byType.toPercent)
+        
+        # mouse event: all points contained by the clicked cluster(bar)
+        def pickCluster(event):
+            
+#             if event.artist not in bars:
+#                 return True
+                
+            N = len(event.ind)
+            if not N:
+                return True
+            
+            i=0
+            for dataidx in event.ind:
+                if i==3:
+                    break
+                # print/ax.text
+                print(dataidx)
+#                 print(byType.pivot.reset_index().loc[dataidx].dropna())
+                i+=1
+            plt.show()
+            return True
+        
+        byType.figbar.canvas.mpl_connect('pick_event', pickCluster)
         
         plt.show()
     
