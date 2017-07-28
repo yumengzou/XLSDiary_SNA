@@ -48,7 +48,7 @@ class byType():
         byType.axclose = byType.figscatter.add_axes([0.85, 0.9, 0.1, 0.06])
         byType.axcheck = byType.figscatter.add_axes([0.02, 0.3, 0.15, 0.5])
         
-        byType.figbar=plt.figure(figsize=(6,4))
+        byType.figbar=plt.figure(figsize=(7.2,4.8))
         byType.axb=byType.figbar.add_subplot(111)
         byType.axperc = byType.figbar.add_axes([0.85, 0.03, 0.1, 0.06])
           
@@ -108,7 +108,6 @@ class byType():
             byType.switch['boo']=switch.values
             
             byType.filter(self)
-            byType.drawScatter(self)
             
         check.on_clicked(checkFilter)
         
@@ -122,15 +121,16 @@ class byType():
             if not N:
                 return True
             
-            figpie, axpie = plt.subplots()
             for i,dataidx in enumerate(event.ind):
                 if i==3:
                     break
                 # pie chart
+                figpie,axpie=plt.subplots()
                 ser=byType.pivot.reset_index().loc[dataidx].dropna()
                 Labels=ser[1:].index
                 size=[round(n*100/ser[1:].sum()) for n in ser[1:].values]
-                axpie.pie(size, labels=Labels, autopct='%1.1f%%', startangle=90)
+                Explode=[0.1 if p==max(size) else 0 for p in size]
+                axpie.pie(size, explode=Explode, labels=Labels, autopct='%1.1f%%', shadow=True, startangle=90)
                 axpie.set_title(ser[0])
             plt.show()
             return True
@@ -156,11 +156,10 @@ class byType():
         bottom=0
         bars=[]
         for feat in stacks:
-            c=np.random.rand(4)
-            p=byType.axb.bar(xbar,ClbyTp.loc[xtab,feat],color=c,bottom=bottom)
+            p=byType.axb.bar(xbar,ClbyTp.loc[xtab,feat],color=np.random.rand(4),bottom=bottom,picker=2,align='center')
             bottom+=ClbyTp.loc[xtab,feat]
             bars.append(p)
-        
+        byType.axb.set_xticklabels(xtab)
         byType.axb.legend(bars,stacks)
         
         # Button: regenerate graph
@@ -169,24 +168,22 @@ class byType():
         bperc.on_clicked(byType.toPercent)
         
         # mouse event: all points contained by the clicked cluster(bar)
+        texts=[]
+        for i,x in enumerate(xbar):
+            s=byType.clusters[byType.clusters['Cluster']==xtab[i]]['Place']
+            t=byType.axb.text(x-0.4,0.9,s,visible=False)
+            texts.append(t)
+        
         def pickCluster(event):
-            
-#             if event.artist not in bars:
-#                 return True
-                
-            N = len(event.ind)
-            if not N:
+                    
+            if event.artist not in byType.axb.patches:
                 return True
+                        
+            xr,yr=event.artist.xy
+            texts[int(np.ceil(xr))].set_visible(not texts[int(np.ceil(xr))].get_visible())
             
-            i=0
-            for dataidx in event.ind:
-                if i==3:
-                    break
-                # print/ax.text
-                print(dataidx)
-#                 print(byType.pivot.reset_index().loc[dataidx].dropna())
-                i+=1
             plt.show()
+            
             return True
         
         byType.figbar.canvas.mpl_connect('pick_event', pickCluster)
@@ -194,6 +191,8 @@ class byType():
         plt.show()
     
     def ClosenSave(self):
+        byType.figscatter.clear()
+        byType.figbar.clear()
         plt.close('all')
         result=byType.clusters.sort_values(by='Cluster',ascending=False)
         result.to_csv("csv/"+byType.colName+"Cluster.csv",index=False,encoding='utf-8')
