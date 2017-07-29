@@ -54,13 +54,13 @@ class byType():
           
     def filter(self):
         switch=byType.switch.set_index('boo')['types']
-        thrownFeatures=['Type!='+repr(Type) for Type in switch[False]]
         
-        if thrownFeatures:
+        if isinstance(switch, pd.Series) and switch.empty:
+            filtered=byType.CusType
+        else:
+            thrownFeatures=['Type!='+repr(Type) for Type in switch[False]]
             s='&'.join(thrownFeatures)
             filtered=byType.CusType.query(s)
-        else:
-            filtered=byType.CusType
         
         byType.pivot=filtered.pivot(index=byType.colName,columns='Type',values='Freq')
     
@@ -80,7 +80,7 @@ class byType():
         
         byType.axs.cla()
         points=byType.axs.scatter(y,x,z,c=byType.labels,s=50,alpha=0.5,picker=3)
-        byType.axs.set_title('Clustering Places based on the Type of events they appear in')
+        byType.axs.set_title('Clustering ' + byType.colName +' based on the Type of events they appear in')
         
         # axes labels
         xl,yl,zl=pca.explained_variance_ratio_
@@ -112,7 +112,7 @@ class byType():
         check.on_clicked(checkFilter)
         
         # mouse event: a pie chart for each point
-        def pickPlace(event):
+        def pickCus(event):
             
             if event.artist != points:
                 return True
@@ -135,12 +135,14 @@ class byType():
             plt.show()
             return True
         
-        byType.figscatter.canvas.mpl_connect('pick_event', pickPlace)
+        byType.figscatter.canvas.mpl_connect('pick_event', pickCus)
         
         byType.drawBar(self)
           
     # stacked bar plot
     def drawBar(self,ClbyTp=None):
+        
+        byType.axb.cla()
         
         # by default, generate graph from instance variable Cluster-by-Type (DataFrame)
         if ClbyTp is None:
@@ -151,7 +153,6 @@ class byType():
         ## stacks is a list of selected features(Types of Event) used in K-means clustering
         stacks=byType.switch.set_index('boo').loc[True,'types'].values
         
-        byType.axb.cla()
         xbar=np.arange(len(xtab))
         bottom=0
         bars=[]
@@ -170,19 +171,21 @@ class byType():
         # mouse event: all points contained by the clicked cluster(bar)
         texts=[]
         for i,x in enumerate(xbar):
-            s=byType.clusters[byType.clusters['Cluster']==xtab[i]]['Place']
-            t=byType.axb.text(x-0.4,0.9,s,visible=False)
+            s='\n'.join(byType.clusters[byType.clusters['Cluster']==xtab[i]][byType.colName].values)
+            t=byType.axb.text(x-0.4,20,s,visible=False)
             texts.append(t)
         
         def pickCluster(event):
                     
             if event.artist not in byType.axb.patches:
                 return True
-                        
+            
             xr,yr=event.artist.xy
+            texts[int(np.ceil(xr))].set_y(yr)
+            texts[int(np.ceil(xr))].set_bbox({'facecolor':'white','alpha':0.5})
             texts[int(np.ceil(xr))].set_visible(not texts[int(np.ceil(xr))].get_visible())
             
-            plt.show()
+            plt.draw()
             
             return True
         
@@ -207,8 +210,11 @@ class byType():
 
 
 
-g = byType()
-g.init('Place')
-g.drawScatter()
-
+g1 = byType()
+g1.init('Place')
+g1.drawScatter()
+ 
+# g2 = byType()
+# g2.init('Participants')
+# g2.drawScatter()
 
