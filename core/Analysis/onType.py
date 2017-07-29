@@ -31,28 +31,36 @@ class byType():
         CusType=pd.merge(EventCus,EventType,how='left').drop("Event",axis=1)  
         CusType['Freq']=1
         CusType=CusType.groupby([colName,'Type']).sum().reset_index()
+        
+        # col-Type-Freq table: select the top frequent instances in the user-selected column
         gt4=CusType[colName].value_counts()>4 # boolean Series
         freqCus=CusType[colName].value_counts()[gt4].index
         byType.CusType=CusType.set_index(colName).ix[freqCus].reset_index()
         
+        # types-boo Series: select the top frequent types as filter-able
         gt4=byType.CusType['Type'].value_counts()>4 # boolean Series
         freqType=byType.CusType['Type'].value_counts()[gt4].index
         byType.switch=pd.DataFrame({'types':freqType,'boo':True})
         
+        # sample(col)-feature(type)::freq pivot table
         filtered=byType.CusType.query("Type!='Go'&Type!='Visit'")
         byType.pivot=filtered.pivot(index=colName,columns='Type',values='Freq')
         
+        # 3D scatter plot
         byType.figscatter=plt.figure(figsize=(9,6))
         byType.axs = byType.figscatter.add_subplot(111, projection='3d')
         byType.axdraw = byType.figscatter.add_axes([0.85, 0.03, 0.1, 0.06])
         byType.axclose = byType.figscatter.add_axes([0.85, 0.9, 0.1, 0.06])
         byType.axcheck = byType.figscatter.add_axes([0.02, 0.3, 0.15, 0.5])
         
+        # bar plot
         byType.figbar=plt.figure(figsize=(7.2,4.8))
         byType.axb=byType.figbar.add_subplot(111)
         byType.axperc = byType.figbar.add_axes([0.85, 0.03, 0.1, 0.06])
-          
+    
+    # regenerate the sample-feature pivot table after switch is altered
     def filter(self):
+        
         switch=byType.switch.set_index('boo')['types']
         
         if isinstance(switch, pd.Series) and switch.empty:
@@ -64,13 +72,16 @@ class byType():
         
         byType.pivot=filtered.pivot(index=byType.colName,columns='Type',values='Freq')
     
-    # 3D scatter plot      
+    # draw 3D scatter plot      
     def drawScatter(self):
         
         mat=byType.pivot.replace(np.nan,0).as_matrix()
         cluster=KMeans(n_clusters=10).fit(mat)
-        byType.labels=cluster.labels_
-        byType.clusters=pd.DataFrame({byType.colName:byType.pivot.index,'Cluster':byType.labels})
+        
+        # clustering result
+        byType.clusters=pd.DataFrame({byType.colName:byType.pivot.index,'Cluster':cluster.labels_})
+        
+        # Cluster-Type table: explore the meaning/constitution of a cluster
         byType.ClbyTp=pd.merge(byType.clusters,byType.CusType,how='left')\
         .groupby(['Cluster','Type']).count()[byType.colName]\
         .unstack().replace(np.nan,0) # for bar plot
@@ -79,7 +90,7 @@ class byType():
         x,y,z=zip(*pca.transform(mat))
         
         byType.axs.cla()
-        points=byType.axs.scatter(y,x,z,c=byType.labels,s=50,alpha=0.5,picker=3)
+        points=byType.axs.scatter(y,x,z,c=cluster.labels_,s=50,alpha=0.5,picker=3)
         byType.axs.set_title('Clustering ' + byType.colName +' based on the Type of events they appear in')
         
         # axes labels
@@ -103,6 +114,7 @@ class byType():
         check = CheckButtons(byType.axcheck, byType.switch['types'], byType.switch['boo'])
         
         def checkFilter(label):
+            
             switch=byType.switch.set_index('types')['boo']
             switch[label]=not switch[label]
             byType.switch['boo']=switch.values
@@ -111,7 +123,7 @@ class byType():
             
         check.on_clicked(checkFilter)
         
-        # mouse event: a pie chart for each point
+        # mouse event: a pie chart for each point on click
         def pickCus(event):
             
             if event.artist != points:
@@ -139,7 +151,7 @@ class byType():
         
         byType.drawBar(self)
           
-    # stacked bar plot
+    # draw stacked bar plot
     def drawBar(self,ClbyTp=None):
         
         byType.axb.cla()
@@ -168,7 +180,7 @@ class byType():
         bperc=Button(byType.axperc,'to %')
         bperc.on_clicked(byType.toPercent)
         
-        # mouse event: all points contained by the clicked cluster(bar)
+        # mouse event: display all instances in a cluster on click
         texts=[]
         for i,x in enumerate(xbar):
             s='\n'.join(byType.clusters[byType.clusters['Cluster']==xtab[i]][byType.colName].values)
@@ -193,6 +205,15 @@ class byType():
         
         plt.show()
     
+    # normalize the bar plot
+    def toPercent(self):
+        def percent(arr):
+            arr=[n/arr.sum() for n in arr]
+            return arr
+        pClbyTp=byType.ClbyTp.apply(percent,axis=1)
+        byType.drawBar(self, pClbyTp)
+    
+    # clear and close all plt figures and save the col-Type-Freq table and the clustering result to csv
     def ClosenSave(self):
         byType.figscatter.clear()
         byType.figbar.clear()
@@ -200,13 +221,6 @@ class byType():
         result=byType.clusters.sort_values(by='Cluster',ascending=False)
         result.to_csv("csv/"+byType.colName+"Cluster.csv",index=False,encoding='utf-8')
         byType.CusType.to_csv('csv/'+byType.colName+'TypeFreq.csv',index=False,encoding='utf-8')
-        
-    def toPercent(self):
-        def percent(arr):
-            arr=[n/arr.sum() for n in arr]
-            return arr
-        pClbyTp=byType.ClbyTp.apply(percent,axis=1)
-        byType.drawBar(self, pClbyTp)
 
 
 
