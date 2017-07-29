@@ -85,9 +85,13 @@ def ppl_plc(diary):
     ppl_plc['Weight']=1
     
     edges=ppl_plc.groupby(['Place','Participants']).sum().reset_index()
+    ppl_dict=pd.Series('People',index=edges['Participants'].unique()).to_dict()
+    plc_dict=pd.Series('Place',index=edges['Place'].unique()).to_dict()
+    type_dict={**ppl_dict,**plc_dict}
     edges.rename(columns={'Participants':'Source','Place':'Target'},inplace=True)
     
     G = nx.from_pandas_dataframe(edges, source="Source", target="Target", edge_attr="Weight")
+    nx.set_node_attributes(G, 'Type', type_dict)
     nx.write_graphml(G, "Graph/ppl_plc.graphml", encoding="utf-8")
         
     return
