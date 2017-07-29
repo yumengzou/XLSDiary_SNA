@@ -274,7 +274,7 @@ def extract_weather(txt_path,diary_path):
 
     print("Extracted " + str(len(weather)) +
           " weathers and stored as DateVWeather.csv in the current working directory.\n" + 
-          "Length of the diary's date is " + str(len(diary['Date'].dropna().unique())) + 
+          "Length of the diary's date is " + str(len(diary['Date'].dropna().unique())) + ".\n"
           "Please correct all the errors and give them back to diaryLibrary.make_weather()")
     
     return
@@ -283,7 +283,7 @@ def extract_weather(txt_path,diary_path):
 
 """
 --- Put weather information into the diary spreadsheet ---
-@weather_path = path to the weather csv
+@weather_path = path to the weather csv: English Date - Chinese Date - Weather DataFrame
 @diary_path   = path to the diary csv
 write a csv file of diary with weather
 return
@@ -293,7 +293,7 @@ def make_weather(weather_path,diary_path):
     weather=pd.read_csv(weather_path)
     diary=pd.read_csv(diary_path)
     
-    if len(weather['weather'].dropna())!=len(diary['Date'].dropna().unique()):
+    if len(weather['weather'])!=len(diary['Date'].dropna().unique()):
         print("Check errors in the weather DataFrame.")
         return
         
