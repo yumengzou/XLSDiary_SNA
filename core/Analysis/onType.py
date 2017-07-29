@@ -20,6 +20,10 @@ plt.rcParams['font.family']='Microsoft YaHei'
 
 diary=pd.read_csv("csv/Diary.csv")
 
+def percent(arr):
+    arr=[n/arr.sum() for n in arr]
+    return arr
+
 class byType():
     
     def init(self,colName):
@@ -33,25 +37,24 @@ class byType():
         CusType=CusType.groupby([colName,'Type']).sum().reset_index()
         
         # col-Type-Freq table: select the top frequent instances in the user-selected column
-        gt4=CusType[colName].value_counts()>4 # boolean Series
+        gt4=CusType[colName].value_counts()>3 # boolean Series
         freqCus=CusType[colName].value_counts()[gt4].index
         byType.CusType=CusType.set_index(colName).ix[freqCus].reset_index()
         
         # types-boo Series: select the top frequent types as filter-able
-        gt4=byType.CusType['Type'].value_counts()>4 # boolean Series
-        freqType=byType.CusType['Type'].value_counts()[gt4].index
+#         gt4=byType.CusType['Type'].value_counts()>5 # boolean Series
+        freqType=byType.CusType['Type'].value_counts()[:15].index
         byType.switch=pd.DataFrame({'types':freqType,'boo':True})
         
         # sample(col)-feature(type)::freq pivot table
-        filtered=byType.CusType.query("Type!='Go'&Type!='Visit'")
-        byType.pivot=filtered.pivot(index=colName,columns='Type',values='Freq')
+        byType.pivot=byType.CusType.pivot(index=colName,columns='Type',values='Freq').apply(percent,axis=1).replace(np.nan,0)
         
         # 3D scatter plot
         byType.figscatter=plt.figure(figsize=(9,6))
         byType.axs = byType.figscatter.add_subplot(111, projection='3d')
         byType.axdraw = byType.figscatter.add_axes([0.85, 0.03, 0.1, 0.06])
         byType.axclose = byType.figscatter.add_axes([0.85, 0.9, 0.1, 0.06])
-        byType.axcheck = byType.figscatter.add_axes([0.02, 0.3, 0.15, 0.5])
+        byType.axcheck = byType.figscatter.add_axes([0.02, 0.3, 0.15, 0.6])
         
         # bar plot
         byType.figbar=plt.figure(figsize=(7.2,4.8))
@@ -61,19 +64,21 @@ class byType():
     # regenerate the sample-feature pivot table after switch is altered
     def filter(self):
         
-        switch=byType.switch.set_index('boo')['types']
+        switch=byType.switch[byType.switch['boo']==False]['types']
         
         if isinstance(switch, pd.Series) and switch.empty:
             filtered=byType.CusType
         else:
-            thrownFeatures=['Type!='+repr(Type) for Type in switch[False]]
+            thrownFeatures=['Type!='+repr(Type) for Type in switch]
             s='&'.join(thrownFeatures)
             filtered=byType.CusType.query(s)
         
-        byType.pivot=filtered.pivot(index=byType.colName,columns='Type',values='Freq')
+        byType.pivot=filtered.pivot(index=byType.colName,columns='Type',values='Freq').replace(np.nan,0)
     
     # draw 3D scatter plot      
     def drawScatter(self):
+        
+        byType.filter(self)
         
         mat=byType.pivot.replace(np.nan,0).as_matrix()
         cluster=KMeans(n_clusters=10).fit(mat)
@@ -115,11 +120,10 @@ class byType():
         
         def checkFilter(label):
             
-            switch=byType.switch.set_index('types')['boo']
-            switch[label]=not switch[label]
-            byType.switch['boo']=switch.values
-            
-            byType.filter(self)
+            boo=byType.switch.set_index('types')['boo']
+            boo[label]=not boo[label]
+            byType.switch['boo']=boo.values
+            print(byType.switch)
             
         check.on_clicked(checkFilter)
         
@@ -144,6 +148,7 @@ class byType():
                 Explode=[0.1 if p==max(size) else 0 for p in size]
                 axpie.pie(size, explode=Explode, labels=Labels, autopct='%1.1f%%', shadow=True, startangle=90)
                 axpie.set_title(ser[0])
+            
             plt.show()
             return True
         
@@ -207,9 +212,6 @@ class byType():
     
     # normalize the bar plot
     def toPercent(self):
-        def percent(arr):
-            arr=[n/arr.sum() for n in arr]
-            return arr
         pClbyTp=byType.ClbyTp.apply(percent,axis=1)
         byType.drawBar(self, pClbyTp)
     
@@ -224,11 +226,11 @@ class byType():
 
 
 
-g1 = byType()
-g1.init('Place')
-g1.drawScatter()
+# g1 = byType()
+# g1.init('Place')
+# g1.drawScatter()
  
-# g2 = byType()
-# g2.init('Participants')
-# g2.drawScatter()
+g2 = byType()
+g2.init('Participants')
+g2.drawScatter()
 
