@@ -33,14 +33,15 @@ class Cluster():
         
         EventSamp=diary[['Event',sampleCol]].dropna()
         EventFeat=diary[['Event',featureCol]].dropna()
-        SampFeat=pd.merge(EventSamp,EventFeat,how='left').drop("Event",axis=1)  
+        SampFeat=pd.merge(EventSamp,EventFeat,how='left').drop("Event",axis=1)
         SampFeat['Freq']=1
         SampFeat=SampFeat.groupby([sampleCol,featureCol]).sum().reset_index()
         
         # Sample-Feature-Freq table: select the top frequent instances in the user-selected column
-        gt4=SampFeat[sampleCol].value_counts()>3 # boolean Series
+        gt4=SampFeat[sampleCol].value_counts()>1 # boolean Series
         freqSamp=SampFeat[sampleCol].value_counts()[gt4].index
         Cluster.SampFeat=SampFeat.set_index(sampleCol).ix[freqSamp].reset_index()
+        
         
         # Sample-Feature-Freq pivot table
         Cluster.pivot=Cluster.SampFeat.pivot(index=sampleCol,columns=featureCol,values='Freq').apply(percent,axis=1)
@@ -82,7 +83,7 @@ class Cluster():
         Cluster.filter(self)
         
         mat=Cluster.pivot.replace(np.nan,0).as_matrix()
-        cluster=KMeans(n_clusters=10).fit(mat)
+        cluster=KMeans(n_clusters=6).fit(mat)
         
         # clustering result
         Cluster.clusters=pd.DataFrame({Cluster.sampleCol:Cluster.pivot.index,'Cluster':cluster.labels_})
@@ -221,7 +222,7 @@ class Cluster():
         Cluster.figbar.clear()
         plt.close('all')
         result=Cluster.clusters.sort_values(by='Cluster',ascending=False)
-        result.to_csv("csv/"+Cluster.sampleCol+"Cluster.csv",index=False,encoding='utf-8')
+        result.to_csv("csv/"+Cluster.sampleCol+"Cluster_on"+Cluster.featureCol+".csv",index=False,encoding='utf-8')
         Cluster.SampFeat.to_csv('csv/'+Cluster.sampleCol+Cluster.featureCol+'Freq.csv',index=False,encoding='utf-8')
 
 
@@ -238,3 +239,6 @@ class Cluster():
 # g3.init('Participants','Type')
 # g3.draw()
 
+g4=Cluster()
+g4.init('Place','Season')
+g4.draw()

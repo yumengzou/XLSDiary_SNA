@@ -19,6 +19,7 @@ def preprocess(diary):
     diary['Participants']=StdNm(diary['Participants'])
     diary=StdType(diary)
     diary=StdPlc(diary)
+    diary['Season'].fillna(method='ffill',inplace=True)
     
     # make event index from Type
     event_iter=0
