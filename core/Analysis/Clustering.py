@@ -93,51 +93,55 @@ class Cluster():
         .groupby(['Cluster',Cluster.featureCol]).count()[Cluster.sampleCol]\
         .unstack().replace(np.nan,0) # for bar plot
         
+        ClSpFt=pd.merge(Cluster.SampFeat,Cluster.clusters,how='left').groupby('Cluster')
+        ForEachCluster=lambda x : x.pivot(index=Cluster.sampleCol,columns=Cluster.featureCol,values='Freq').apply(percent).replace(np.nan,0)
+        Cluster.ClSpFt=ClSpFt.apply(ForEachCluster)
+        
         pca=skl.PCA(n_components=3).fit(mat)
         x,y,z=zip(*pca.transform(mat))
         
         Cluster.axs.cla()
-        points=Cluster.axs.scatter(y,x,z,c=cluster.labels_,s=50,alpha=0.5,picker=3)
+        points=Cluster.axs.scatter(x,y,z,c=cluster.labels_,s=50,alpha=0.5,picker=3)
         Cluster.axs.set_title('Clustering ' + Cluster.sampleCol +' based on the ' + Cluster.featureCol)
-        
+         
         # axes labels
         xl,yl,zl=pca.explained_variance_ratio_
         Cluster.axs.set_xlabel('{:.2f}%'.format(xl*100))
         Cluster.axs.set_ylabel('{:.2f}%'.format(yl*100))
         Cluster.axs.set_zlabel('{:.2f}%'.format(zl*100))
-        
+         
         # Button: regenerate graph
         Cluster.axdraw.cla()
         bdraw=Button(Cluster.axdraw,'Draw')
         bdraw.on_clicked(Cluster.draw)
-        
+         
         # Button: close graph and store csv
         Cluster.axclose.cla()
         bclose=Button(Cluster.axclose,'Close')
         bclose.on_clicked(Cluster.ClosenSave)
-        
+         
         # Check Button: filter features
         Cluster.axcheck.cla()
         check = CheckButtons(Cluster.axcheck, Cluster.switch[Cluster.featureCol], Cluster.switch['boo'])
-        
+         
         def checkFilter(label):
-            
+             
             boo=Cluster.switch.set_index(Cluster.featureCol)['boo']
             boo[label]=not boo[label]
             Cluster.switch['boo']=boo.values
-            
+             
         check.on_clicked(checkFilter)
-        
+         
         # mouse event: a pie chart for each point on click
         def pickCus(event):
-            
+             
             if event.artist != points:
                 return True
-                
+                 
             N = len(event.ind)
             if not N:
                 return True
-            
+             
             for i,dataidx in enumerate(event.ind):
                 if i==3:
                     break
@@ -149,10 +153,10 @@ class Cluster():
                 Explode=[0.1 if p==max(size) else 0 for p in size]
                 axpie.pie(size, explode=Explode, labels=Labels, autopct='%1.1f%%', shadow=True, startangle=90)
                 axpie.set_title(ser[0])
-            
+             
             plt.show()
             return True
-        
+         
         Cluster.figscatter.canvas.mpl_connect('pick_event', pickCus)
         
         Cluster.drawBar(self)
@@ -180,7 +184,7 @@ class Cluster():
             bars.append(p)
         Cluster.axb.set_xticklabels(xtab)
         Cluster.axb.legend(bars,stacks)
-        
+         
         # Button: regenerate graph
         Cluster.axperc.cla()
         bperc=Button(Cluster.axperc,'to %')
@@ -194,21 +198,21 @@ class Cluster():
             texts.append(t)
         
         def pickCluster(event):
-                    
+                     
             if event.artist not in Cluster.axb.patches:
                 return True
-            
+             
             xr,yr=event.artist.xy
             texts[int(np.ceil(xr))].set_y(yr)
             texts[int(np.ceil(xr))].set_bbox({'facecolor':'white','alpha':0.5})
             texts[int(np.ceil(xr))].set_visible(not texts[int(np.ceil(xr))].get_visible())
-            
+             
             plt.draw()
-            
+             
             return True
-        
+         
         Cluster.figbar.canvas.mpl_connect('pick_event', pickCluster)
-        
+         
         plt.show()
     
     # normalize the bar plot
@@ -221,9 +225,7 @@ class Cluster():
         Cluster.figscatter.clear()
         Cluster.figbar.clear()
         plt.close('all')
-        result=Cluster.clusters.sort_values(by='Cluster',ascending=False)
-        result.to_csv("csv/"+Cluster.sampleCol+"Cluster_on"+Cluster.featureCol+".csv",index=False,encoding='utf-8')
-        Cluster.SampFeat.to_csv('csv/'+Cluster.sampleCol+Cluster.featureCol+'Freq.csv',index=False,encoding='utf-8')
+        Cluster.ClSpFt.to_csv('csv/Cluster'+Cluster.sampleCol+'_on'+Cluster.featureCol+'.csv',encoding='utf-8')
 
 
 
