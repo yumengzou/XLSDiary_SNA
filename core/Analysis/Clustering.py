@@ -44,7 +44,7 @@ class Cluster():
         
         
         # Sample-Feature-Freq pivot table
-        Cluster.pivot=Cluster.SampFeat.pivot(index=sampleCol,columns=featureCol,values='Freq').apply(percent,axis=1)
+        Cluster.pivot=Cluster.SampFeat.pivot(index=sampleCol,columns=featureCol,values='Freq')
         
         # features-boolean Series: select the top frequent types as filter-able
 #         gt4=Cluster.SampFeat[featureCol].value_counts()>5 # boolean Series
@@ -75,7 +75,7 @@ class Cluster():
             s='&'.join(thrownFeatures)
             filtered=Cluster.SampFeat.query(s)
         
-        Cluster.pivot=filtered.pivot(index=Cluster.sampleCol,columns=Cluster.featureCol,values='Freq').replace(np.nan,0)
+        Cluster.pivot=filtered.pivot(index=Cluster.sampleCol,columns=Cluster.featureCol,values='Freq').replace(np.nan,0).apply(percent,axis=1)
     
     # draw 3D scatter plot      
     def draw(self):
@@ -237,10 +237,10 @@ class Cluster():
 # g2.init('Place','Participants')
 # g2.draw()
 
-g3=Cluster()
-g3.init('Participants','Type')
-g3.draw()
+# g3=Cluster()
+# g3.init('Participants','Type')
+# g3.draw()
 
-# g4=Cluster()
-# g4.init('Place','Season')
-# g4.draw()
+g4=Cluster()
+g4.init('Place','Season')
+g4.draw()

@@ -85,11 +85,13 @@ class Cluster():
         radar.render('Graph/radar_'+Cluster.sampleCol+Cluster.featureCol+'.html')
         
         scatter.render('Graph/scatter'+Cluster.sampleCol+Cluster.featureCol+'.html')
+        
+        Cluster.ClSpFt.to_csv('csv/Cluster'+Cluster.sampleCol+'_on'+Cluster.featureCol+'.csv',encoding='utf-8')
 
 
-# g1 = Cluster()
-# g1.init('Place','Type')
-# g1.draw()
+g1 = Cluster()
+g1.init('Place','Type')
+g1.draw()
 
 # g2 = Cluster()
 # g2.init('Place','Participants')
