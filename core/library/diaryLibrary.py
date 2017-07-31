@@ -62,6 +62,7 @@ def ppl(diary):
     
     # export edges into a graphml file
     G = nx.from_pandas_dataframe(edgelist, source="Source", target="Target", edge_attr="Weight")
+    nx.set_node_attributes(G, "k-core", nx.core_number(G))
     nx.write_graphml(G, "Graph/ppl.graphml", encoding="utf-8")
     
     return
@@ -93,6 +94,7 @@ def ppl_plc(diary):
     
     G = nx.from_pandas_dataframe(edges, source="Source", target="Target", edge_attr="Weight")
     nx.set_node_attributes(G, 'Type', type_dict)
+    nx.set_node_attributes(G, "k-core", nx.core_number(G))
     nx.write_graphml(G, "Graph/ppl_plc.graphml", encoding="utf-8")
         
     return

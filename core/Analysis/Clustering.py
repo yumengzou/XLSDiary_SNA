@@ -237,10 +237,10 @@ class Cluster():
 # g2.init('Place','Participants')
 # g2.draw()
 
-# g3=Cluster()
-# g3.init('Participants','Type')
-# g3.draw()
+g3=Cluster()
+g3.init('Participants','Type')
+g3.draw()
 
-g4=Cluster()
-g4.init('Place','Season')
-g4.draw()
+# g4=Cluster()
+# g4.init('Place','Season')
+# g4.draw()
