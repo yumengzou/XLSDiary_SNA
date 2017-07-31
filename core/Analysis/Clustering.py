@@ -229,9 +229,9 @@ class Cluster():
 
 
 
-# g1 = Cluster()
-# g1.init('Place','Type')
-# g1.draw()
+g1 = Cluster()
+g1.init('Place','Type')
+g1.draw()
 
 # g2 = Cluster()
 # g2.init('Place','Participants')
@@ -241,6 +241,6 @@ class Cluster():
 # g3.init('Participants','Type')
 # g3.draw()
 
-g4=Cluster()
-g4.init('Place','Season')
-g4.draw()
+# g4=Cluster()
+# g4.init('Place','Season')
+# g4.draw()

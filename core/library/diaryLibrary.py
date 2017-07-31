@@ -5,6 +5,7 @@ import pandas as pd
 import mafan as mf
 import re
 import networkx as nx
+import community
 
 
 """
@@ -63,7 +64,16 @@ def ppl(diary):
     # export edges into a graphml file
     G = nx.from_pandas_dataframe(edgelist, source="Source", target="Target", edge_attr="Weight")
     nx.set_node_attributes(G, "k-core", nx.core_number(G))
+    nx.set_node_attributes(G,"community",community.best_partition(G))
     nx.write_graphml(G, "Graph/ppl.graphml", encoding="utf-8")
+    
+    # export nodes with attributes into a csv
+    idx,attr=zip(*G.nodes(data=True))
+    core=[d['k-core'] for d in attr]
+    commun=[d['community'] for d in attr]
+    nodes_attr=pd.DataFrame({'k-core':core,'community':commun},index=idx)
+    nodes_attr.to_csv("csv/pplCoreCommunity.csv",encoding='utf-8')
+    
     
     return
 
