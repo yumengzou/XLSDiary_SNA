@@ -64,8 +64,13 @@ def ppl(diary):
     # export edges into a graphml file
     G = nx.from_pandas_dataframe(edgelist, source="Source", target="Target", edge_attr="Weight")
     nx.set_node_attributes(G, "k-core", nx.core_number(G))
-    nx.set_node_attributes(G,"community",community.best_partition(G))
+    communityDict=community.best_partition(G)
+    nx.set_node_attributes(G,"community",communityDict)
     nx.write_graphml(G, "Graph/ppl.graphml", encoding="utf-8")
+    
+    # export a graph of the relationship between communities
+    G_commun=community.induced_graph(communityDict, G)
+    nx.write_graphml(G_commun, "Graph/pplCommunity.graphml", encoding="utf-8")
     
     # export nodes with attributes into a csv
     idx,attr=zip(*G.nodes(data=True))
@@ -87,6 +92,7 @@ return
 """
 def ppl_plc(diary):
     
+    # make people-place DataFrame by merging on event
     evt_plc=diary[['Event','Place']].dropna()
     
     evt_ppl=diary[['Event','Participants']]
@@ -96,16 +102,31 @@ def ppl_plc(diary):
     ppl_plc=pd.merge(evt_plc,evt_ppl,how='left').dropna().drop('Event',axis=1)
     ppl_plc['Weight']=1
     
+    # make edgelist
     edges=ppl_plc.groupby(['Place','Participants']).sum().reset_index()
     ppl_dict=pd.Series('People',index=edges['Participants'].unique()).to_dict()
     plc_dict=pd.Series('Place',index=edges['Place'].unique()).to_dict()
     type_dict={**ppl_dict,**plc_dict}
     edges.rename(columns={'Participants':'Source','Place':'Target'},inplace=True)
     
+    # make the people-place network
     G = nx.from_pandas_dataframe(edges, source="Source", target="Target", edge_attr="Weight")
     nx.set_node_attributes(G, 'Type', type_dict)
     nx.set_node_attributes(G, "k-core", nx.core_number(G))
+    communityDict=community.best_partition(G)
+    nx.set_node_attributes(G,"community",communityDict)
     nx.write_graphml(G, "Graph/ppl_plc.graphml", encoding="utf-8")
+    
+    # make community network
+    G_commun=community.induced_graph(communityDict, G)
+    nx.write_graphml(G_commun, "Graph/ppl_plc_Community.graphml", encoding="utf-8")
+    
+    # export nodes with attributes into a csv
+    idx,attr=zip(*G.nodes(data=True))
+    core=[d['k-core'] for d in attr]
+    commun=[d['community'] for d in attr]
+    nodes_attr=pd.DataFrame({'k-core':core,'community':commun},index=idx)
+    nodes_attr.to_csv("csv/ppl_plc_CoreCommunity.csv",encoding='utf-8')
         
     return
 
