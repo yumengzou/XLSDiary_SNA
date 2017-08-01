@@ -49,8 +49,6 @@ class Cluster():
     # draw 3D scatter plot      
     def draw(self):
         
-#         Cluster.filter(self)
-        
         mat=Cluster.pivot.replace(np.nan,0).as_matrix()
         cluster=KMeans(n_clusters=6).fit(mat)
         
@@ -64,27 +62,33 @@ class Cluster():
         
         pca=skl.PCA(n_components=3).fit(mat)
         xyz=pca.transform(mat)
-        xl,yl,zl=pca.explained_variance_ratio_
-        scatter=pch.Scatter3D('Clustering ' + Cluster.sampleCol +' by ' + Cluster.featureCol, is_grid=True)
+#         xl,yl,zl=pca.explained_variance_ratio_
+        
+        # 3D scatter plot
+        scatter=pch.Scatter3D('Clustering ' + Cluster.sampleCol +' by ' + Cluster.featureCol, is_grid=True,
+                              width=1200,height=600)
         
         for i, group in pd.concat([Cluster.clusters,pd.DataFrame(xyz)],axis=1).groupby('Cluster'):
-            scatter.add('Cluster '+str(i),xyz[group.index].tolist(),xaxis_name=xl, yaxis_name=yl,grid_top="60%",legend_pos='80%')
+            scatter.add('Cluster '+str(i),xyz[group.index].tolist(),
+                        grid_right="75%",legend_top="10%",legend_pos="0%")
         
-        
-        radar=pch.Radar('Radar Chart of ' + Cluster.sampleCol + ' on ' + Cluster.featureCol,is_grid=True)
+        # Radar chart
+        radar=pch.Radar('Radar Chart of ' + Cluster.sampleCol + ' on ' + Cluster.featureCol, title_pos="60%")
         schema=[(feat,1) for feat in Cluster.switch[Cluster.featureCol]]
         radar.config(schema)
         
         for i in np.arange(6):
             data=Cluster.ClSpFt.loc[i].as_matrix().tolist()
             c=['#50a3ba', '#eac763', '#d94e5d','#4e79a7','#f9713c','#b3e4a1']
-            radar.add('Cluster '+str(i), data, item_color=c[i],legend_pos='80%')
-#             print(i,cluster.pivot(index=Cluster.sampleCol,columns=Cluster.featureCol,values='Freq'))
-#         scatter.grid(radar.get_series(),grid_bottom="60%")
-        
+            radar.add('Cluster '+str(i), data, item_color=c[i],legend_pos='50%',legend_top="10%",
+                      is_area_show=True,area_color=c[i],area_opacity=0.5)
+
         radar.render('Graph/radar_'+Cluster.sampleCol+Cluster.featureCol+'.html')
-        
+         
         scatter.render('Graph/scatter'+Cluster.sampleCol+Cluster.featureCol+'.html')
+#         scatter.grid(radar.get_series(),grid_left="75%")
+        
+#         scatter.render('TEST.html')
         
         Cluster.ClSpFt.to_csv('csv/Cluster'+Cluster.sampleCol+'_on'+Cluster.featureCol+'.csv',encoding='utf-8')
 
