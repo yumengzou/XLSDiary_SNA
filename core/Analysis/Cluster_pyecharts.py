@@ -65,7 +65,7 @@ class Cluster():
 #         xl,yl,zl=pca.explained_variance_ratio_
         
         # 3D scatter plot
-        scatter=pch.Scatter3D('Clustering ' + Cluster.sampleCol +' by ' + Cluster.featureCol, is_grid=True,
+        scatter=pch.Scatter3D('Clustering ' + Cluster.sampleCol +' by ' + Cluster.featureCol,is_grid=True,
                               width=1200,height=600)
         
         for i, group in pd.concat([Cluster.clusters,pd.DataFrame(xyz)],axis=1).groupby('Cluster'):
@@ -73,24 +73,24 @@ class Cluster():
                         grid_right="75%",legend_top="10%",legend_pos="0%")
         
         # Radar chart
-        radar=pch.Radar('Radar Chart of ' + Cluster.sampleCol + ' on ' + Cluster.featureCol, title_pos="60%")
+        radar=pch.Radar('Radar Chart of ' + Cluster.sampleCol + ' on ' + Cluster.featureCol, is_grid=True)
         schema=[(feat,1) for feat in Cluster.switch[Cluster.featureCol]]
         radar.config(schema)
         
         for i in np.arange(6):
             data=Cluster.ClSpFt.loc[i].as_matrix().tolist()
             c=['#50a3ba', '#eac763', '#d94e5d','#4e79a7','#f9713c','#b3e4a1']
-            radar.add('Cluster '+str(i), data, item_color=c[i],legend_pos='50%',legend_top="10%",
+            radar.add('Cluster '+str(i), data, item_color=c[i],legend_pos='0%',legend_top="10%",
                       is_area_show=True,area_color=c[i],area_opacity=0.5)
 
-        radar.render('Graph/radar_'+Cluster.sampleCol+Cluster.featureCol+'.html')
+        radar.render('Graph/'+Cluster.sampleCol+Cluster.featureCol+'_radar.html')
          
-        scatter.render('Graph/scatter'+Cluster.sampleCol+Cluster.featureCol+'.html')
+        scatter.render('Graph/'+Cluster.sampleCol+Cluster.featureCol+'_scatter.html')
 #         scatter.grid(radar.get_series(),grid_left="75%")
         
 #         scatter.render('TEST.html')
         
-        Cluster.ClSpFt.to_csv('csv/Cluster'+Cluster.sampleCol+'_on'+Cluster.featureCol+'.csv',encoding='utf-8')
+#         Cluster.ClSpFt.to_csv('csv/Cluster'+Cluster.sampleCol+'_on'+Cluster.featureCol+'.csv',encoding='utf-8')
 
 
 g1 = Cluster()
