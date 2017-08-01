@@ -66,11 +66,11 @@ def ppl(diary):
     nx.set_node_attributes(G, "k-core", nx.core_number(G))
     communityDict=community.best_partition(G)
     nx.set_node_attributes(G,"community",communityDict)
-    nx.write_graphml(G, "Graph/ppl.graphml", encoding="utf-8")
+    nx.write_graphml(G, "Graph/Network/ppl.graphml", encoding="utf-8")
     
     # export a graph of the relationship between communities
     G_commun=community.induced_graph(communityDict, G)
-    nx.write_graphml(G_commun, "Graph/pplCommunity.graphml", encoding="utf-8")
+    nx.write_graphml(G_commun, "Graph/Network/pplCommunity.graphml", encoding="utf-8")
     
     # export nodes with attributes into a csv
     idx,attr=zip(*G.nodes(data=True))
@@ -115,11 +115,11 @@ def ppl_plc(diary):
     nx.set_node_attributes(G, "k-core", nx.core_number(G))
     communityDict=community.best_partition(G)
     nx.set_node_attributes(G,"community",communityDict)
-    nx.write_graphml(G, "Graph/ppl_plc.graphml", encoding="utf-8")
+    nx.write_graphml(G, "Graph/Network/ppl_plc.graphml", encoding="utf-8")
     
     # make community network
     G_commun=community.induced_graph(communityDict, G)
-    nx.write_graphml(G_commun, "Graph/ppl_plc_Community.graphml", encoding="utf-8")
+    nx.write_graphml(G_commun, "Graph/Network/ppl_plc_Community.graphml", encoding="utf-8")
     
     # export nodes with attributes into a csv
     idx,attr=zip(*G.nodes(data=True))
