@@ -42,7 +42,7 @@ class Cluster():
         gt4=SampFeat[sampleCol].value_counts()>1 # boolean Series
         freqSamp=SampFeat[sampleCol].value_counts()[gt4].index
         Cluster.SampFeat=SampFeat.set_index(sampleCol).ix[freqSamp].reset_index()
-        Cluster.pivot=Cluster.SampFeat.pivot(index=sampleCol,columns=featureCol,values='Freq').replace(np.nan,0).apply(percent,axis=1)
+        Cluster.pivot=Cluster.SampFeat.pivot(index=sampleCol,columns=featureCol,values='Freq').apply(percent,axis=1).replace(np.nan,0)
         
         # 3D scatter plot
         Cluster.figscatter=plt.figure(figsize=(12,6))
@@ -64,7 +64,7 @@ class Cluster():
         
         # Cluster--Sample-Feature
         ClSpFt=pd.merge(Cluster.SampFeat,Cluster.clusters,how='left').groupby('Cluster')
-        forEachCluster=lambda x : x.pivot(index=Cluster.sampleCol,columns=Cluster.featureCol,values='Freq').apply(percent).replace(np.nan,0)
+        forEachCluster=lambda x : x.pivot(index=Cluster.sampleCol,columns=Cluster.featureCol,values='Freq').apply(percent,axis=1).replace(np.nan,0)
         Cluster.ClSpFt=ClSpFt.apply(forEachCluster)
         Cluster.ClSpFt.to_csv('csv/Cluster'+Cluster.sampleCol+'_on'+Cluster.featureCol+'.csv',encoding='utf-8')
         

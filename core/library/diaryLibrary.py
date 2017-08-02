@@ -77,7 +77,8 @@ def ppl(diary):
     idx,attr=zip(*G.nodes(data=True))
     core=[d['k-core'] for d in attr]
     commun=[d['community'] for d in attr]
-    nodes_attr=pd.DataFrame({'k-core':core,'community':commun},index=idx)
+    betwn=[d['betweenness'] for d in attr]
+    nodes_attr=pd.DataFrame({'k-core':core,'community':commun,'betweenness centrality':betwn},index=idx)
     nodes_attr.to_csv("csv/pplCoreCommunity.csv",encoding='utf-8')
     
     
