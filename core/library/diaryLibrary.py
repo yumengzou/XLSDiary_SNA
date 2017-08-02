@@ -66,6 +66,7 @@ def ppl(diary):
     nx.set_node_attributes(G, "k-core", nx.core_number(G))
     communityDict=community.best_partition(G)
     nx.set_node_attributes(G,"community",communityDict)
+    nx.set_node_attributes(G,"betweenness",nx.betweenness_centrality(G, 850, normalized=True, weight="Weight"))
     nx.write_graphml(G, "Graph/Network/ppl.graphml", encoding="utf-8")
     
     # export a graph of the relationship between communities

@@ -69,8 +69,8 @@ class Cluster():
                               width=1200,height=600)
         
         for i, group in pd.concat([Cluster.clusters,pd.DataFrame(xyz)],axis=1).groupby('Cluster'):
-            scatter.add('Cluster '+str(i),xyz[group.index].tolist(),
-                        grid_right="75%",legend_top="10%",legend_pos="0%")
+            scatter.add('Cluster '+str(i),xyz[group.index].tolist(),grid_right="75%",legend_top="10%",legend_pos="0%",
+                        is_grid3D_rotate=True,grid3D_rotate_speed=40)
         
         # Radar chart
         radar=pch.Radar('Radar Chart of ' + Cluster.sampleCol + ' on ' + Cluster.featureCol, is_grid=True)
@@ -83,9 +83,9 @@ class Cluster():
             radar.add('Cluster '+str(i), data, item_color=c[i],legend_pos='0%',legend_top="10%",
                       is_area_show=True,area_color=c[i],area_opacity=0.5)
 
-        radar.render('Graph/'+Cluster.sampleCol+Cluster.featureCol+'_radar.html')
+        radar.render('Graph/Cluster/'+Cluster.sampleCol+Cluster.featureCol+'_radar.html')
          
-        scatter.render('Graph/'+Cluster.sampleCol+Cluster.featureCol+'_scatter.html')
+        scatter.render('Graph/Cluster/'+Cluster.sampleCol+Cluster.featureCol+'_scatter.html')
 #         scatter.grid(radar.get_series(),grid_left="75%")
         
 #         scatter.render('TEST.html')
